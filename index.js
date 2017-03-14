@@ -20,6 +20,9 @@ var app = express()
 // init the subscriptions object
 var subscriptions = new Object();
 
+// init the earthquakes object
+var earthquakes = new Object();
+
 // init the sensors object
 var sensors = new Object();
 
@@ -148,6 +151,149 @@ app.delete('/subscriptions/:id', function(req, res){
 
 	// delete the subscription
 	delete subscriptions[subid];
+
+	// return
+	res.json({"success":true});
+    } else {
+
+	// return
+	res.json({"success":false});
+	
+    }
+
+})
+
+
+///////////////////////////////////////////// 
+//
+// earthquakes routes 
+//
+///////////////////////////////////////////// 
+
+// GET 
+app.get('/earthquakes', function(req, res) {
+
+    // debug print
+    console.log("Invoked GET on /earthquakes");
+
+    // return
+    res.json({"earthquakes": earthquakes, "success":true});
+})
+
+
+// GET :id
+app.get('/earthquakes/:id', function(req, res) {
+
+    // get the subid
+    eid = req.params.id;
+    
+    // debug print
+    console.log("Invoked GET on /earthquakes/" + eid);
+
+    // return
+    if (earthquakes.hasOwnProperty(eid)){
+	res.json({"earthquake": earthquakes[eid], "success":true});
+    } else {
+	res.json({"success":false});
+    }
+
+})
+
+
+// POST
+app.post('/earthquakes', jsonParser, function(req, res) {
+
+    // debug print
+    console.log("Invoked POST on /earthquakes");
+
+    // generate an UUID
+    eid = uuidGenerator.v4().toString();
+
+    // check if the eid is free
+    if (!earthquakes.hasOwnProperty(eid)){
+
+	// store the earthquake
+	earthquakes[eid] = new Object();
+	earthquakes[eid]["timestamp"] = new Date().getTime().toString();
+	earthquakes[eid]["latitude"] = req.body["latitude"];
+	earthquakes[eid]["longitude"] = req.body["longitude"];
+	earthquakes[eid]["depth"] = req.body["depth"];
+	earthquakes[eid]["intensity"] = req.body["intensity"];
+
+	// return
+	res.json({"earthquake_id":eid, "success":true});
+
+    } else {
+	
+	// return
+	res.json({"success":false});
+
+    }
+})
+
+
+// PUT
+app.put('/earthquakes/:id', jsonParser, function(req, res){
+
+    // get the subid
+    eid = req.params.id;
+
+    // debug print
+    console.log("Invoked PUT on /earthquakes/" + eid);
+
+    // check if it exists
+    if (earthquakes.hasOwnProperty(eid)){
+
+	// store the new data
+	earthquakes[eid]["latitude"] = req.body["latitude"];
+	earthquakes[eid]["longitude"] = req.body["longitude"];
+	earthquakes[eid]["depth"] = req.body["depth"];
+	earthquakes[eid]["intensity"] = req.body["intensity"];
+
+	// return
+	res.json({"success":true});
+	
+    } else {
+	
+	// return
+	res.json({"success":false});
+
+    }
+
+})
+
+
+// DELETE
+app.delete('/earthquakes', function(req, res){
+
+    // debug print
+    console.log("Invoked DELETE on /earthquakes");
+
+    // delete the earthquakes
+    for (k in earthquakes){
+	if (earthquakes.hasOwnProperty(k)){
+	    delete earthquakes[k];
+	}
+    }
+    res.json({"success":true});
+
+})
+
+
+// DELETE
+app.delete('/earthquakes/:id', function(req, res){
+
+    // get the eid
+    eid = req.params.id;
+
+    // debug print
+    console.log("Invoked DELETE on /earthquakes/" + eid);
+
+    // delete the subscription
+    if (earthquakes.hasOwnProperty(eid)){
+
+	// delete the subscription
+	delete earthquakes[eid];
 
 	// return
 	res.json({"success":true});
