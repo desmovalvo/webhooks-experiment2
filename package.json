@@ -1,0 +1,16 @@
+{
+  "name": "rhapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fabio Viola",
+  "license": "GPL v3",
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "express": "^4.15.2",
+    "node-uuid": "^1.4.7"
+  }
+}
