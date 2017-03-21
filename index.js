@@ -357,6 +357,45 @@ app.delete('/earthquakes', function(req, res){
 	    delete earthquakes[k];
 	}
     }
+
+    // handle webhooks
+    for (wh in subscriptions){
+	console.log("Sending notification");
+
+	// prepare the notification
+	http_data = JSON.stringify({
+	    "msg":"Deleted all the earthquakes data!"
+	});
+	http_options = {
+	    host: subscriptions[wh]["postHost"],
+	    port: subscriptions[wh]["postPort"],
+	    path: subscriptions[wh]["postPath"],
+	    method: "POST",
+	    headers: {'Content-Type': 'application/json'},
+	};
+
+	// perform the request
+	req = http.request(http_options, (res) => {
+	    res.setEncoding('utf8');
+	    res.on('data', (chunk) => {
+		console.log(`BODY: ${chunk}`);
+	    });
+	    res.on('end', () => {
+		console.log('No more data in response.');
+	    });
+	});
+	
+	req.on('error', (e) => {
+	    console.log(`problem with request: ${e.message}`);
+	});
+
+	
+	// write data to request body
+	req.write(http_data);
+	req.end();
+    }
+
+    
     res.json({"success":true});
 
 })
