@@ -7,6 +7,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var uuidGenerator = require('node-uuid');
+var http = require('http');
  
 ///////////////////////////////////////////// 
 //
@@ -59,7 +60,7 @@ app.get('/subscriptions/:id', function(req, res) {
 
     // return
     if (subscriptions.hasOwnProperty(subid)){
-	res.json({"postUrl": subscriptions[subid], "success":true});
+	res.json({"subscription": subscriptions[subid], "success":true});
     } else {
 	res.json({"success":false});
     }
@@ -80,7 +81,10 @@ app.post('/subscriptions', jsonParser, function(req, res) {
     if (!subscriptions.hasOwnProperty(subid)){
 
 	// store the subscription
-	subscriptions[subid] = req.body["postUrl"];
+	subscriptions[subid] = new Object();
+	subscriptions[subid]["postHost"] = req.body["postHost"];
+	subscriptions[subid]["postPort"] = req.body["postPort"];
+	subscriptions[subid]["postPath"] = req.body["postPath"];	
 
 	// return
 	res.json({"subscription_id":subid, "success":true});
@@ -106,7 +110,9 @@ app.put('/subscriptions/:id', jsonParser, function(req, res){
     if (subscriptions.hasOwnProperty(subid)){
 
 	// store the new postUrl
-	subscriptions[subid] = req.body["postUrl"];	
+	subscriptions[subid]["postPort"] = req.body["postPort"];
+	subscriptions[subid]["postHost"] = req.body["postHost"];
+	subscriptions[subid]["postPath"] = req.body["postPath"];
 
 	// return
 	res.json({"success":true});
@@ -176,6 +182,43 @@ app.get('/earthquakes', function(req, res) {
     // debug print
     console.log("Invoked GET on /earthquakes");
 
+    // handle webhooks
+    for (wh in subscriptions){
+	console.log("Sending notification");
+
+	// prepare the notification
+	http_data = JSON.stringify({
+	    "msg":"Performed GET on /earthquakes"
+	});
+	http_options = {
+	    host: subscriptions[wh]["postHost"],
+	    port: subscriptions[wh]["postPort"],
+	    path: subscriptions[wh]["postPath"],
+	    method: "POST",
+	    headers: {'Content-Type': 'application/json'},
+	};
+
+	// perform the request
+	req = http.request(http_options, (res) => {
+	    res.setEncoding('utf8');
+	    res.on('data', (chunk) => {
+		console.log(`BODY: ${chunk}`);
+	    });
+	    res.on('end', () => {
+		console.log('No more data in response.');
+	    });
+	});
+	
+	req.on('error', (e) => {
+	    console.log(`problem with request: ${e.message}`);
+	});
+
+	
+	// write data to request body
+	req.write(http_data);
+	req.end();
+    }
+
     // return
     res.json({"earthquakes": earthquakes, "success":true});
 })
@@ -220,6 +263,45 @@ app.post('/earthquakes', jsonParser, function(req, res) {
 	earthquakes[eid]["depth"] = req.body["depth"];
 	earthquakes[eid]["intensity"] = req.body["intensity"];
 
+    // handle webhooks
+    for (wh in subscriptions){
+	console.log("Sending notification");
+
+	// prepare the notification
+	http_data = JSON.stringify({
+	    "msg":"NEW EARTHQUAKE!",
+	    "earthquake":earthquakes[eid]
+	});
+	http_options = {
+	    host: subscriptions[wh]["postHost"],
+	    port: subscriptions[wh]["postPort"],
+	    path: subscriptions[wh]["postPath"],
+	    method: "POST",
+	    headers: {'Content-Type': 'application/json'},
+	};
+
+	// perform the request
+	req = http.request(http_options, (res) => {
+	    res.setEncoding('utf8');
+	    res.on('data', (chunk) => {
+		console.log(`BODY: ${chunk}`);
+	    });
+	    res.on('end', () => {
+		console.log('No more data in response.');
+	    });
+	});
+	
+	req.on('error', (e) => {
+	    console.log(`problem with request: ${e.message}`);
+	});
+
+	
+	// write data to request body
+	req.write(http_data);
+	req.end();
+    }
+
+	
 	// return
 	res.json({"earthquake_id":eid, "success":true});
 
